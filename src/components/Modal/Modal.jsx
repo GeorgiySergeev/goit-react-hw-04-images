@@ -1,42 +1,34 @@
 import { createPortal } from 'react-dom';
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Overlay, MolalForm, Image } from './Modal.styled';
 
 const modalRoot = document.getElementById('modal-root');
 
-export class Modal extends Component {
-  state = {
-    showModal: true,
-  };
+export function Modal({ closeModal, bigImage }) {
+  const [showModal, setShowModal] = useState(false);
 
-  componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyDown);
-  }
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-  }
-
-  handleKeyDown = e => {
+  const handleKeyDown = e => {
     if (e.code === 'Escape') {
-      this.props.closeModal();
+      closeModal();
     }
   };
 
-  handleBackDropClick = e => {
-    if (e.target.id === 'overlay') this.props.closeModal();
+  const handleBackDropClick = e => {
+    if (e.target.id === 'overlay') closeModal();
   };
 
-  render() {
-    return createPortal(
-      <Overlay id="overlay" onClick={this.handleBackDropClick}>
-        <MolalForm>
-          {this.props.children}
-          <Image src={this.props.bigImage} alt="" />
-        </MolalForm>
-      </Overlay>,
-      modalRoot
-    );
-  }
+  return createPortal(
+    <Overlay id="overlay" onClick={handleBackDropClick}>
+      <MolalForm>
+        <Image src={bigImage} alt="" />
+      </MolalForm>
+    </Overlay>,
+    modalRoot
+  );
 }

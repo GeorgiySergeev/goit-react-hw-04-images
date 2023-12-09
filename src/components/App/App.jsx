@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import { noImageFound, imagesFound } from 'helpers/notification';
 import { ToastContainer } from 'react-toastify';
 import { LoadingSpinner } from 'components/Loader/Loader';
@@ -11,107 +11,92 @@ import { Button } from 'components/Button/Button';
 import { Footer } from 'components/Footer/Footer';
 import { Modal } from 'components/Modal/Modal';
 
-export class App extends Component {
-  state = {
-    images: [],
-    query: '',
-    page: 1,
-    isLoading: false,
-    showModal: false,
-    modalImg: null,
-    totalHits: null,
-    loadMore: true,
-    notificationState: false,
-  };
+export function App() {
+  const [images, setImages] = useState([]);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [isLoading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalImg, setModalImg] = useState(null);
+  const [totalHits, setTotalHits] = useState(0);
+  const [loadMore, setLoadMore] = useState(true);
+  const [notificationState, setNotificationState] = useState(false);
 
-  async componentDidUpdate(_, prevState) {
-    const shouldFetchData =
-      prevState.query !== this.state.query ||
-      prevState.page !== this.state.page;
+  useEffect(() => {
+    if (!notificationState) return;
 
-    if (shouldFetchData) {
-      this.setState({ isLoading: true, loadMore: true });
+    imagesFound(totalHits);
+  }, [notificationState, totalHits]);
 
+  useEffect(() => {
+    if (!query) {
+      return;
+    }
+
+    const getImages = async (query, page) => {
+      setLoading(true);
       try {
-        const response = await fatchHits(this.state.query, this.state.page);
-        this.setState({ totalHits: response.totalHits });
-
-        if (!this.state.notificationState) {
-          imagesFound(response.totalHits);
-          this.setState({ notificationState: true });
-        }
+        const response = await fatchHits(query, page);
+        setImages(prevState =>
+          page === 1 ? response.hits : [...prevState, ...response.hits]
+        );
 
         if (response.hits.length === 0) {
           noImageFound();
-          this.setState({ images: [] });
-        } else {
-          if (prevState.query !== this.state.query) {
-            this.setState({ images: response.hits });
-          } else {
-            this.setState(prev => ({
-              images: [...prev.images, ...response.hits],
-              loadMore: this.state.page < Math.ceil(response.totalHits / 12),
-            }));
-          }
+          setLoading(false);
+          return;
         }
+
+        setTotalHits(response.totalHits);
+        setNotificationState(true);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching images:', error);
       } finally {
-        this.setState({ isLoading: false });
+        setLoading(false);
+        setLoadMore(page === Math.ceil(totalHits / 12));
       }
+    };
+
+    if (query !== '') getImages(query, page);
+  }, [query, page, notificationState, totalHits]);
+
+  const openModal = img => {
+    setShowModal(true);
+    setModalImg(img);
+  };
+
+  const closeModal = () => {
+    if (modalImg) {
+      setShowModal(false);
     }
-  }
-
-  openModal = img => {
-    this.setState({ showModal: true, modalImg: img });
   };
 
-  closeModal = () => {
-    if (this.state.modalImg) {
-      this.setState({ showModal: false });
+  const handleQueryChange = newQuery => {
+    if (query !== newQuery) {
+      setImages([]);
     }
+
+    setQuery(newQuery);
+    setPage(1);
+    setNotificationState(false);
   };
 
-  handleQueryChange = newQuery => {
-    this.setState({ query: newQuery, page: 1, notificationState: false });
+  const onLoadMore = () => {
+    setPage(prev => prev + 1);
   };
 
-  onLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
-  };
-
-  render() {
-    const {
-      query,
-      images,
-      isLoading,
-      showModal,
-      modalImg,
-      loadMore,
-      totalHits,
-    } = this.state;
-
-    return (
-      <Container>
-        {isLoading && <LoadingSpinner />}
-        <SearchBar onSubmit={this.handleQueryChange} />
-        {query ? null : <HeadTitle>PIXABY IMAGE SEARCH</HeadTitle>}
-        <ImageGallery
-          openModal={this.openModal}
-          gallery={images}
-          total={totalHits}
-        />
-
-        {images.length !== 0 && loadMore && (
-          <Button onLoadMore={this.onLoadMore}>Load More</Button>
-        )}
-
-        {showModal && (
-          <Modal closeModal={this.closeModal} bigImage={modalImg} />
-        )}
-        <ToastContainer autoClose={2000} />
-        <Footer></Footer>
-      </Container>
-    );
-  }
+  return (
+    <Container>
+      {isLoading && <LoadingSpinner />}
+      <SearchBar onSubmit={handleQueryChange} />
+      {query ? null : <HeadTitle>PIXABY IMAGE SEARCH</HeadTitle>}
+      <ImageGallery openModal={openModal} gallery={images} total={totalHits} />
+      {images.length !== 0 && !loadMore && (
+        <Button onLoadMore={onLoadMore}>Load More</Button>
+      )}
+      {showModal && <Modal closeModal={closeModal} bigImage={modalImg} />}
+      <ToastContainer autoClose={2000} />
+      <Footer></Footer>
+    </Container>
+  );
 }

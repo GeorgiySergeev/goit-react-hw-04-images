@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 
 import 'react-toastify/dist/ReactToastify.css';
@@ -11,45 +11,41 @@ import {
   SearchFormInput,
 } from './Searchbar.styled';
 
-export class SearchBar extends PureComponent {
-  state = {
-    localQuery: '',
-  };
+export function SearchBar({ onSubmit }) {
+  const [localQuery, setlocalQuery] = useState('');
 
-  handleSubmit = e => {
+  const handleSubmit = e => {
     e.preventDefault();
 
-    if (this.state.localQuery.trim() === '') {
+    if (localQuery.trim() === '') {
       return toast('Please enter a valid search term');
     }
-    this.props.onSubmit(this.state.localQuery);
-    this.setState({ localQuery: '' });
+    onSubmit(localQuery);
+    setlocalQuery('');
   };
 
-  handleChangeInput = e => {
+  const handleChangeInput = e => {
     const newQuery = e.target.value;
-    this.setState({ localQuery: newQuery });
+    setlocalQuery(newQuery);
   };
 
-  render() {
-    return (
-      <Searchbar>
-        <SearchForm onSubmit={this.handleSubmit}>
-          <SearchFormButton>
-            <FiSearch>Search</FiSearch>
-          </SearchFormButton>
+  return (
+    <Searchbar>
+      <SearchForm onSubmit={handleSubmit}>
+        <SearchFormButton>
+          <FiSearch>Search</FiSearch>
+        </SearchFormButton>
 
-          <SearchFormInput
-            type="text"
-            name="search"
-            value={this.state.localQuery}
-            autoComplete="off"
-            autoFocus
-            placeholder="Search images and photos..."
-            onChange={this.handleChangeInput}
-          />
-        </SearchForm>
-      </Searchbar>
-    );
-  }
+        <SearchFormInput
+          type="text"
+          name="search"
+          value={localQuery}
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos..."
+          onChange={handleChangeInput}
+        />
+      </SearchForm>
+    </Searchbar>
+  );
 }
