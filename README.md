@@ -1,3 +1,3 @@
-# React goit-hw-03-image-finder
+# React goit-hw-04-image-finder refactoring on hooks
 
 
