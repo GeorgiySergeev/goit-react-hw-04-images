@@ -18,37 +18,36 @@ export function App() {
   const [isLoading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalImg, setModalImg] = useState(null);
-  const [totalHits, setTotalHits] = useState(0);
   const [loadMore, setLoadMore] = useState(true);
   const [error, setError] = useState(null);
+
+  const getImages = async (query, page) => {
+    setLoading(true);
+    try {
+      const response = await fatchHits(query, page);
+
+      if (response.hits.length === 0) {
+        return noImageFound();
+      }
+
+      setLoadMore(page === Math.ceil(response.totalHits / 12));
+      setImages(prevState =>
+        page === 1 ? response.hits : [...prevState, ...response.hits]
+      );
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!query) {
       return;
     }
-    const getImages = async (query, page) => {
-      setLoading(true);
-      try {
-        const response = await fatchHits(query, page);
-
-        if (response.hits.length === 0) {
-          return noImageFound();
-        }
-
-        setTotalHits(response.totalHits);
-        setImages(prevState =>
-          page === 1 ? response.hits : [...prevState, ...response.hits]
-        );
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
-        setLoadMore(page === Math.ceil(totalHits / 12));
-      }
-    };
 
     if (query !== '') getImages(query, page);
-  }, [query, page, totalHits]);
+  }, [query, page]);
 
   const openModal = img => {
     setShowModal(true);
@@ -78,7 +77,7 @@ export function App() {
       {isLoading && <LoadingSpinner />}
       <SearchBar onSubmit={handleQueryChange} />
       {query ? null : <HeadTitle>PIXABY IMAGE SEARCH</HeadTitle>}
-      <ImageGallery openModal={openModal} gallery={images} total={totalHits} />
+      <ImageGallery openModal={openModal} gallery={images} />
       {images.length !== 0 && !loadMore && (
         <Button onLoadMore={onLoadMore}>Load More</Button>
       )}
