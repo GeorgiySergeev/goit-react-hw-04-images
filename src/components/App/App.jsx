@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { noImageFound } from 'helpers/notification';
+import React, { useEffect, useRef, useState } from 'react';
+import { noImageFound, imagesFound } from 'helpers/notification';
 import { ToastContainer } from 'react-toastify';
 import { LoadingSpinner } from 'components/Loader/Loader';
 import { ImageGallery } from 'components/ImageGallery/ImageGallery';
@@ -18,8 +18,20 @@ export function App() {
   const [isLoading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalImg, setModalImg] = useState(null);
-  const [loadMore, setLoadMore] = useState(true);
+  const [loadMore, setLoadMore] = useState(false);
   const [error, setError] = useState(null);
+
+  const [totalHits, setTotalHits] = useState(0);
+  const first = useRef(true);
+
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    } else {
+      imagesFound(totalHits);
+    }
+  }, [totalHits]);
 
   const getImages = async (query, page) => {
     setLoading(true);
@@ -29,8 +41,9 @@ export function App() {
       if (response.hits.length === 0) {
         return noImageFound();
       }
+      setTotalHits(response.totalHits);
+      setLoadMore(page < Math.ceil(response.totalHits / 12));
 
-      setLoadMore(page === Math.ceil(response.totalHits / 12));
       setImages(prevState =>
         page === 1 ? response.hits : [...prevState, ...response.hits]
       );
@@ -59,7 +72,6 @@ export function App() {
       setShowModal(false);
     }
   };
-
   const handleQueryChange = newQuery => {
     if (query !== newQuery) {
       setImages([]);
@@ -78,7 +90,7 @@ export function App() {
       <SearchBar onSubmit={handleQueryChange} />
       {query ? null : <HeadTitle>PIXABY IMAGE SEARCH</HeadTitle>}
       <ImageGallery openModal={openModal} gallery={images} />
-      {images.length !== 0 && !loadMore && (
+      {images.length !== 0 && loadMore && (
         <Button onLoadMore={onLoadMore}>Load More</Button>
       )}
       {showModal && <Modal closeModal={closeModal} bigImage={modalImg} />}

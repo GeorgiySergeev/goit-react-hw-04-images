@@ -1,7 +1,8 @@
 import { toast } from 'react-toastify';
 
 export const imagesFound = num => {
-  return toast(`We found ${num} images`);
+  if (!num) return;
+  toast(`We found ${num} images`);
 };
 
 export const noImageFound = () => {
