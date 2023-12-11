@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { noImageFound } from 'helpers/notification';
+import { noImageFound, imagesFound } from 'helpers/notification';
 import { ToastContainer } from 'react-toastify';
 import { LoadingSpinner } from 'components/Loader/Loader';
 import { ImageGallery } from 'components/ImageGallery/ImageGallery';
@@ -20,36 +20,45 @@ export function App() {
   const [modalImg, setModalImg] = useState(null);
   const [totalHits, setTotalHits] = useState(0);
   const [loadMore, setLoadMore] = useState(true);
-  const [error, setError] = useState(null);
+  const [notificationState, setNotificationState] = useState(false);
 
-  const getImages = async (query, page) => {
-    setLoading(true);
-    try {
-      const response = await fatchHits(query, page);
+  useEffect(() => {
+    if (!notificationState) return;
 
-      if (response.hits.length === 0) {
-        return noImageFound();
-      }
-
-      setTotalHits(response.totalHits);
-      setImages(prevState =>
-        page === 1 ? response.hits : [...prevState, ...response.hits]
-      );
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
-      setLoadMore(page === Math.ceil(totalHits / 12));
-    }
-  };
+    imagesFound(totalHits);
+  }, [notificationState, totalHits]);
 
   useEffect(() => {
     if (!query) {
       return;
     }
 
+    const getImages = async (query, page) => {
+      setLoading(true);
+      try {
+        const response = await fatchHits(query, page);
+        setImages(prevState =>
+          page === 1 ? response.hits : [...prevState, ...response.hits]
+        );
+
+        if (response.hits.length === 0) {
+          noImageFound();
+          setLoading(false);
+          return;
+        }
+
+        setTotalHits(response.totalHits);
+        setNotificationState(true);
+      } catch (error) {
+        console.error('Error fetching images:', error);
+      } finally {
+        setLoading(false);
+        setLoadMore(page === Math.ceil(totalHits / 12));
+      }
+    };
+
     if (query !== '') getImages(query, page);
-  }, [query, page]);
+  }, [query, page, notificationState, totalHits]);
 
   const openModal = img => {
     setShowModal(true);
@@ -66,8 +75,10 @@ export function App() {
     if (query !== newQuery) {
       setImages([]);
     }
+
     setQuery(newQuery);
     setPage(1);
+    setNotificationState(false);
   };
 
   const onLoadMore = () => {
@@ -85,7 +96,6 @@ export function App() {
       )}
       {showModal && <Modal closeModal={closeModal} bigImage={modalImg} />}
       <ToastContainer autoClose={2000} />
-      {error && <p>Sorry, something went wrong. Please try again.</p>}
       <Footer></Footer>
     </Container>
   );
