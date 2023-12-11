@@ -22,34 +22,33 @@ export function App() {
   const [loadMore, setLoadMore] = useState(true);
   const [error, setError] = useState(null);
 
-  const getImages = async (query, page) => {
-    setLoading(true);
-    try {
-      const response = await fatchHits(query, page);
-
-      if (response.hits.length === 0) {
-        return noImageFound();
-      }
-
-      setTotalHits(response.totalHits);
-      setImages(prevState =>
-        page === 1 ? response.hits : [...prevState, ...response.hits]
-      );
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
-      setLoadMore(page === Math.ceil(totalHits / 12));
-    }
-  };
-
   useEffect(() => {
     if (!query) {
       return;
     }
+    const getImages = async (query, page) => {
+      setLoading(true);
+      try {
+        const response = await fatchHits(query, page);
+
+        if (response.hits.length === 0) {
+          return noImageFound();
+        }
+
+        setTotalHits(response.totalHits);
+        setImages(prevState =>
+          page === 1 ? response.hits : [...prevState, ...response.hits]
+        );
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+        setLoadMore(page === Math.ceil(totalHits / 12));
+      }
+    };
 
     if (query !== '') getImages(query, page);
-  }, [query, page]);
+  }, [query, page, totalHits]);
 
   const openModal = img => {
     setShowModal(true);
